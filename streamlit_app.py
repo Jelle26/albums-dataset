@@ -14,7 +14,7 @@ Select artists or albums, and visualize how your ratings compare across categori
 # --- Load data ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv("Album Ratings - Album Ratings.csv")
+    df = pd.read_csv("data/Album Ratings - Album Ratings.csv")
     return df
 
 df = load_data()
