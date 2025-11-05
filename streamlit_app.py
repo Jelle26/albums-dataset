@@ -28,7 +28,7 @@ st.write("Columns detected:", list(df.columns))
 
 # --- Filters (based on your likely columns) ---
 if "Artist" in df.columns:
-    artists = st.multiselect("Select Artist(s)", sorted(df["Artist"].unique()))
+    artists = st.multiselect("Select Artist", sorted(df["Artist"].unique()))
     if artists:
         df = df[df["Artist"].isin(artists)]
 
