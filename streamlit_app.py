@@ -2,65 +2,74 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-# Show the page title and description.
-st.set_page_config(page_title="Albums Dataset", page_icon="🎵")
-st.title("🎶 Albums dataset")
-st.write(
-    """
-    This app visualizes data from [The Movie Database (TMDB)](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata).
-    It shows which movie Genre performed best at the box office over the Years. Just 
-    click on the widgets below to explore!
-    """
-)
+# Streamlit page setup
+st.set_page_config(page_title="🎵 Album Ratings Dashboard", page_icon="🎶")
+st.title("🎶 Album Ratings Dashboard")
 
+st.write("""
+Explore your album ratings interactively!
+Select artists or albums, and visualize how your ratings compare across categories.
+""")
 
-# Load the data from a CSV. We're caching this so it doesn't reload every time the app
-# reruns (e.g. if the user interacts with the widgets).
+# --- Load data ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/Album Ratings - Album Ratings.csv")
+    df = pd.read_csv("Album Ratings - Album Ratings.csv")
     return df
-
 
 df = load_data()
 
-# Show a multiselect widget with the Genres using `st.multiselect`.
-Genres = st.multiselect(
-    "Genres",
-    df.Genre.unique(),
-    ["Action", "Adventure", "Biography", "Comedy", "Drama", "Horror"],
-)
+# --- Inspect the dataset ---
+st.subheader("Data Preview")
+st.dataframe(df.head())
 
-# Show a slider widget with the Years using `st.slider`.
-Years = st.slider("Years", 1986, 2006, (2000, 2016))
+# --- Basic checks ---
+st.write("Columns detected:", list(df.columns))
 
-# Filter the dataframe based on the widget input and reshape it.
-df_filtered = df[(df["Genre"].isin(Genres)) & (df["Year"].between(Years[0], Years[1]))]
-df_reshaped = df_filtered.pivot_table(
-    index="Year", columns="Genre", values="Score", aggfunc="sum", fill_value=0
-)
-df_reshaped = df_reshaped.sort_values(by="Year", ascending=False)
+# --- Filters (based on your likely columns) ---
+if "Artist" in df.columns:
+    artists = st.multiselect("Select Artist(s)", sorted(df["Artist"].unique()))
+    if artists:
+        df = df[df["Artist"].isin(artists)]
 
+if "Album" in df.columns:
+    albums = st.multiselect("Select Album(s)", sorted(df["Album"].unique()))
+    if albums:
+        df = df[df["Album"].isin(albums)]
 
-# Display the data as a table using `st.dataframe`.
-st.dataframe(
-    df_reshaped,
-    use_container_width=True,
-    column_config={"Year": st.column_config.TextColumn("Year")},
-)
+# --- Rating visualization ---
+rating_col = None
+for c in df.columns:
+    if "Score" in c or "Rating" in c:
+        rating_col = c
+        break
 
-# Display the data as an Altair chart using `st.altair_chart`.
-df_chart = pd.melt(
-    df_reshaped.reset_index(), id_vars="Year", var_name="Genre", value_name="Score"
-)
-chart = (
-    alt.Chart(df_chart)
-    .mark_line()
-    .encode(
-        x=alt.X("Year:N", title="Year"),
-        y=alt.Y("Score:Q", title="Score earnings ($)"),
-        color="Genre:N",
+if rating_col:
+    st.subheader("Average Album Ratings")
+    avg_ratings = (
+        df.groupby("Artist")[rating_col]
+        .mean()
+        .reset_index()
+        .sort_values(by=rating_col, ascending=False)
     )
-    .properties(height=320)
-)
-st.altair_chart(chart, use_container_width=True)
+
+    chart = (
+        alt.Chart(avg_ratings)
+        .mark_bar()
+        .encode(
+            x=alt.X(rating_col, title="Average Rating"),
+            y=alt.Y("Artist", sort="-x", title="Artist"),
+            tooltip=["Artist", rating_col],
+        )
+        .properties(height=400)
+    )
+    st.altair_chart(chart, use_container_width=True)
+else:
+    st.warning("Couldn’t find a rating column (something like 'Score' or 'Rating').")
+
+# --- Optional: Album art display if there's an image/URL column ---
+img_cols = [c for c in df.columns if "art" in c.lower() or "cover" in c.lower()]
+if img_cols:
+    st.subheader("Album Covers")
+    for _, row in df.iterrows():
+        st.image(row[img_cols[0]], caption=f"{row.get('Album', '')} by {row.get('Artist', '')}")
