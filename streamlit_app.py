@@ -8,7 +8,7 @@ st.title("🎶 Albums dataset")
 st.write(
     """
     This app visualizes data from [The Movie Database (TMDB)](https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata).
-    It shows which movie genre performed best at the box office over the years. Just 
+    It shows which movie Genre performed best at the box office over the Years. Just 
     click on the widgets below to explore!
     """
 )
@@ -24,42 +24,42 @@ def load_data():
 
 df = load_data()
 
-# Show a multiselect widget with the genres using `st.multiselect`.
-genres = st.multiselect(
+# Show a multiselect widget with the Genres using `st.multiselect`.
+Genres = st.multiselect(
     "Genres",
-    df.genre.unique(),
+    df.Genre.unique(),
     ["Action", "Adventure", "Biography", "Comedy", "Drama", "Horror"],
 )
 
-# Show a slider widget with the years using `st.slider`.
-years = st.slider("Years", 1986, 2006, (2000, 2016))
+# Show a slider widget with the Years using `st.slider`.
+Years = st.slider("Years", 1986, 2006, (2000, 2016))
 
 # Filter the dataframe based on the widget input and reshape it.
-df_filtered = df[(df["genre"].isin(genres)) & (df["year"].between(years[0], years[1]))]
+df_filtered = df[(df["Genre"].isin(Genres)) & (df["Year"].between(Years[0], Years[1]))]
 df_reshaped = df_filtered.pivot_table(
-    index="year", columns="genre", values="gross", aggfunc="sum", fill_value=0
+    index="Year", columns="Genre", values="Score", aggfunc="sum", fill_value=0
 )
-df_reshaped = df_reshaped.sort_values(by="year", ascending=False)
+df_reshaped = df_reshaped.sort_values(by="Year", ascending=False)
 
 
 # Display the data as a table using `st.dataframe`.
 st.dataframe(
     df_reshaped,
     use_container_width=True,
-    column_config={"year": st.column_config.TextColumn("Year")},
+    column_config={"Year": st.column_config.TextColumn("Year")},
 )
 
 # Display the data as an Altair chart using `st.altair_chart`.
 df_chart = pd.melt(
-    df_reshaped.reset_index(), id_vars="year", var_name="genre", value_name="gross"
+    df_reshaped.reset_index(), id_vars="Year", var_name="Genre", value_name="Score"
 )
 chart = (
     alt.Chart(df_chart)
     .mark_line()
     .encode(
-        x=alt.X("year:N", title="Year"),
-        y=alt.Y("gross:Q", title="Gross earnings ($)"),
-        color="genre:N",
+        x=alt.X("Year:N", title="Year"),
+        y=alt.Y("Score:Q", title="Score earnings ($)"),
+        color="Genre:N",
     )
     .properties(height=320)
 )
